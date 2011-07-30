@@ -1,0 +1,22 @@
+#!/bin/bash
+API_KEY=5699e23920600c7d178dc30053b238bf
+
+if [[ $# -ne 1 ]]; then
+	echo "Usage: imgurc <image>" >&2
+	exit 1
+fi
+
+RESPONSE="$(mktemp)"
+curl -s -o "$RESPONSE" -F key="$API_KEY" -F image="@$1" http://api.imgur.com/2/upload.json
+python <<_EOF
+import simplejson as json
+import sys
+response = json.load(open('$RESPONSE'))
+if response['upload']:
+	print('        Image: %s' % response['upload']['links']['original'])
+	print('   Imgur Page: %s' % response['upload']['links']['imgur_page'])
+	print(' Image Delete: %s' % response['upload']['links']['delete_page'])
+else:
+	print('Error: %s' % response['error']['message'])
+_EOF
+rm -f "$RESPONSE"
