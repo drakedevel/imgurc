@@ -1,4 +1,8 @@
 #!/bin/bash
+# Written by Andrew Drake (adrake@adrake.org), released into the public domain
+# The latest version is available at http://git.hax.so/imgurc.git
+
+# Plase put your own API key here if you plan to do a lot of uploads
 API_KEY=5699e23920600c7d178dc30053b238bf
 
 if [[ $# -ne 1 ]]; then
