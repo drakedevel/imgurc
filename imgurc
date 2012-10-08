@@ -1,26 +1,26 @@
-#!/bin/bash
+#!/usr/bin/env python
 # Written by Andrew Drake (adrake@adrake.org), released into the public domain
 # The latest version is available at https://github.com/drakedevel/imgurc
-
-# Plase put your own API key here if you plan to do a lot of uploads
-API_KEY=5699e23920600c7d178dc30053b238bf
-
-if [[ $# -ne 1 ]]; then
-	echo "Usage: imgurc <image>" >&2
-	exit 1
-fi
-
-RESPONSE="$(mktemp)"
-curl -s -o "$RESPONSE" -F key="$API_KEY" -F image="@$1" http://api.imgur.com/2/upload.json
-python <<_EOF
-import simplejson as json
+import json
+import subprocess
 import sys
-response = json.load(open('$RESPONSE'))
-if response['upload']:
-	print('        Image: %s' % response['upload']['links']['original'])
-	print('   Imgur Page: %s' % response['upload']['links']['imgur_page'])
-	print(' Image Delete: %s' % response['upload']['links']['delete_page'])
-else:
-	print('Error: %s' % response['error']['message'])
-_EOF
-rm -f "$RESPONSE"
+
+API_URL = 'http://api.imgur.com/2/upload.json'
+API_KEY = '5699e23920600c7d178dc30053b238bf'
+
+def do_main():
+    if len(sys.argv) <= 1:
+        print "Usage: imgurc <image>"
+        sys.exit(1)
+
+    response_str = subprocess.check_output(['curl', '-s', '-F', 'key=%s' % API_KEY, '-F', 'image=@%s' % sys.argv[1], API_URL])
+    response = json.loads(response_str)
+    if response['upload']:
+        print('        Image: %s' % response['upload']['links']['original'])
+        print('   Imgur Page: %s' % response['upload']['links']['imgur_page'])
+        print(' Image Delete: %s' % response['upload']['links']['delete_page'])
+    else:
+        print('Error: %s' % response['error']['message'])
+
+if __name__ == '__main__':
+    do_main()

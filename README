@@ -1,4 +1,5 @@
 Written by Andrew Drake (adrake@adrake.org).
 
-Please grab your own API key (it's free and easy!) if you intend to
-upload a lot of images.
+Usage: ./imgurc <image>
+
+It's really not that complicated.
