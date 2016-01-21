@@ -1,26 +1,70 @@
 #!/usr/bin/env python
-# Written by Andrew Drake (adrake@adrake.org), released into the public domain
-# The latest version is available at https://github.com/drakedevel/imgurc
+"""imgurc - lightweight imgur command-line client
+Written in 2011-2016 by Andrew Drake <adrake@adrake.org>
+
+To the extent possible under law, the author(s) have dedicated all copyright
+and related and neighboring rights to this software to the public domain
+worldwide. This software is distributed without any warranty.
+
+You should have received a copy of the CC0 Public Domain Dedication along with
+this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
+
+The latest version is available at <https://github.com/drakedevel/imgurc>
+
+"""
+from __future__ import print_function
+import base64
 import json
-import subprocess
 import sys
+if sys.version_info.major > 2:
+    from urllib.parse import urlencode
+    from urllib.request import Request, urlopen
+else:
+    from urllib import urlencode
+    from urllib2 import Request, urlopen
 
-API_URL = 'http://api.imgur.com/2/upload.json'
-API_KEY = '5699e23920600c7d178dc30053b238bf'
+try:
+    import requests
+except ImportError:
+    requests = None
 
-def do_main():
+API_URL = 'https://api.imgur.com/3/image'
+CLIENT_ID = '5b86d5223ece8cf'
+
+IMAGE_URL = "{d[link]}"
+PAGE_URL = "http://imgur.com/{d[id]}"
+DELETE_URL = "http://imgur.com/delete/{d[deletehash]}"
+
+
+def _upload(in_f):
+    headers = {'Authorization': 'Client-ID {}'.format(CLIENT_ID)}
+    if requests:
+        # Marginally faster since we can upload in binary encoding
+        resp = requests.post(API_URL, headers=headers, files={'image': in_f})
+        return resp.json()
+
+    # Slower, but works everywhere
+    postdata = urlencode({'image': base64.b64encode(in_f.read()),
+                          'type': 'base64'}).encode()
+    request = Request(API_URL, headers=headers, data=postdata)
+    response = urlopen(request).read().decode('utf-8')
+    return json.loads(response)
+
+
+def main():
     if len(sys.argv) <= 1:
-        print "Usage: imgurc <image>"
+        print("Usage: imgurc <image>", file=sys.stderr)
         sys.exit(1)
 
-    response_str = subprocess.check_output(['curl', '-s', '-F', 'key=%s' % API_KEY, '-F', 'image=@%s' % sys.argv[1], API_URL])
-    response = json.loads(response_str)
-    if response['upload']:
-        print('        Image: %s' % response['upload']['links']['original'])
-        print('   Imgur Page: %s' % response['upload']['links']['imgur_page'])
-        print(' Image Delete: %s' % response['upload']['links']['delete_page'])
+    with open(sys.argv[1], 'rb') as in_f:
+        response = _upload(in_f)
+    if response['success']:
+        d = response['data']
+        print("        Image: {}".format(IMAGE_URL.format(d=d)))
+        print("   Imgur Page: {}".format(PAGE_URL.format(d=d)))
+        print(" Image Delete: {}".format(DELETE_URL.format(d=d)))
     else:
-        print('Error: %s' % response['error']['message'])
+        print("Error: {}".format(response), file=sys.stderr)
 
 if __name__ == '__main__':
-    do_main()
+    main()
